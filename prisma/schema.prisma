@@ -1,14 +1,13 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// This is your Prisma schema file for MongoDB
+
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider          = "postgresql"
-  url               = env("DATABASE_URL")
-  directUrl         = env("DIRECT_URL")
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 enum VoteType {
@@ -17,34 +16,34 @@ enum VoteType {
 }
 
 model Account {
-  id                String  @id @default(cuid())
-  userId            String
+  id                String  @id @default(auto()) @map("_id") // Using MongoDB ObjectId
+  userId            String  @map("_id")
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String? @db.String
+  access_token      String? @db.String
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String? @db.String
   session_state     String?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
 
   @@unique([provider, providerAccountId])
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id           String   @id @default(auto()) @map("_id")
   sessionToken String   @unique
   userId       String
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id])
 }
 
 model User {
-  id                String         @id @default(cuid())
+  id                String         @id @default(auto()) @map("_id")
   name              String?
   email             String?        @unique
   emailVerified     DateTime?
@@ -63,7 +62,7 @@ model User {
 }
 
 model Subreddit {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id")
   name      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -86,7 +85,7 @@ model Subscription {
 }
 
 model Post {
-  id          String    @id @default(cuid())
+  id          String    @id @default(auto()) @map("_id")
   title       String
   content     Json?
   createdAt   DateTime  @default(now())
@@ -100,27 +99,25 @@ model Post {
 }
 
 model Comment {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id")
   text      String
   createdAt DateTime @default(now())
   author    User     @relation(fields: [authorId], references: [id])
   authorId  String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id])
   postId    String
 
   replyToId String?
-  replyTo   Comment?  @relation("ReplyTo", fields: [replyToId], references: [id], onDelete: Restrict, onUpdate: Restrict) // Changed to Restrict
-  replies   Comment[] @relation("ReplyTo") // No referential action needed here
+  replyTo   Comment?  @relation("ReplyTo", fields: [replyToId], references: [id])
+  replies   Comment[] @relation("ReplyTo")
 
   votes     CommentVote[]
 }
 
-
-
 model Vote {
   user   User     @relation(fields: [userId], references: [id])
   userId String
-  post   Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post   Post     @relation(fields: [postId], references: [id])
   postId String
   type   VoteType
 
@@ -130,7 +127,7 @@ model Vote {
 model CommentVote {
   user      User     @relation(fields: [userId], references: [id])
   userId    String
-  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  comment   Comment  @relation(fields: [commentId], references: [id])
   commentId String
   type      VoteType
 
